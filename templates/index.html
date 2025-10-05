@@ -3,152 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<<<<<<< HEAD
     <meta name="theme-color" content="#007bff">
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/static/manifest.json">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
     <link rel="icon" href="/static/favicon.ico">
     <title>Control de Servicios Médicos</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-=======
-    <title>Control de Servicios Médicos</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="manifest" href="/static/manifest.json">
->>>>>>> e83d37d9f89f2f2ed280f33a659167a77ab2bc7b
 </head>
 <body>
     <div class="container">
         <header>
-<<<<<<< HEAD
-            <div class="logo">📋 Control de Servicios Médicos</div>
-            <div class="subtitle">Sistema de registro para filtrado por profesional</div>
-        </header>
-        <main>
-            <div class="upload-section">
-                <label for="file1-input">Archivo Crystal (Profesional):</label>
-                <input type="file" id="file1-input" name="file1" accept=".xlsx,.xls" required>
-                <label for="file2-input">Archivo Query (Nombre Usuario Validación):</label>
-                <input type="file" id="file2-input" name="file2" accept=".xlsx,.xls" required>
-                <button id="process-button">Procesar Archivos</button>
-            </div>
-            <div id="loading" style="display: none; text-align: center; padding: 10px;">
-                <i class="fas fa-spinner fa-spin"></i> Procesando archivos...
-            </div>
-            <div id="result" style="display: none;">
-                <div class="filter-section">
-                    <label for="professional-filter">Filtrar por Profesional (Crystal):</label>
-                    <select id="professional-filter">
-                        <option value="">Seleccionar Profesional</option>
-                    </select>
-                    <label for="user-filter">Filtrar por Profesional (Query):</label>
-                    <select id="user-filter">
-                        <option value="">Seleccionar Profesional (Query)</option>
-                    </select>
-                    <button id="search-button">Buscar</button>
-                </div>
-                <div class="totals-group">
-                    <div class="card">
-                        <h3>Total Servicios Crystal</h3>
-                        <p class="count" id="total-services-crystal">0</p>
-                    </div>
-                    <div class="card">
-                        <h3>Total Servicios Query</h3>
-                        <p class="count" id="total-services-query">0</p>
-                    </div>
-                </div>
-                <div class="counts-group">
-                    <div class="card">
-                        <h3>Cantidad de Profesionales</h3>
-                        <p class="count" id="num-professionals">0</p>
-                    </div>
-                    <div class="card">
-                        <h3>Cantidad de Usuarios Validación</h3>
-                        <p class="count" id="num-users">0</p>
-                    </div>
-                </div>
-                <div id="global-data"></div>
-                <div id="person-data" class="tab-content" style="display: none;"></div>
-            </div>
-        </main>
-        <footer>
-            <p>© 2025 Control de Servicios Médicos</p>
-        </footer>
-    </div>
-=======
             <h1><i class="fas fa-stethoscope"></i> Control de Servicios Médicos</h1>
-            <p class="subtitle">Sistema de registro para Urgencias y Medicina General</p>
+            <p class="subtitle">Sistema de registro para filtrado por profesional</p>
         </header>
-        
+
         <div class="dashboard">
             <div class="card">
                 <div class="card-header">
                     <div class="card-title">Total Servicios</div>
-                    <div class="icon icon-total">
-                        <i class="fas fa-procedures"></i>
-                    </div>
+                    <div class="icon icon-total"><i class="fas fa-procedures"></i></div>
                 </div>
                 <div class="value value-total">0</div>
                 <div class="card-footer">Registros totales en el sistema</div>
             </div>
-            
+
             <div class="card">
                 <div class="card-header">
                     <div class="card-title">Urgencias</div>
-                    <div class="icon icon-urgencias">
-                        <i class="fas fa-ambulance"></i>
-                    </div>
+                    <div class="icon icon-urgencias"><i class="fas fa-ambulance"></i></div>
                 </div>
                 <div class="value value-urgencias">0</div>
                 <div class="card-footer">Servicios de urgencias hoy</div>
             </div>
-            
+
             <div class="card">
                 <div class="card-header">
                     <div class="card-title">Medicina General</div>
-                    <div class="icon icon-general">
-                        <i class="fas fa-user-md"></i>
-                    </div>
+                    <div class="icon icon-general"><i class="fas fa-user-md"></i></div>
                 </div>
                 <div class="value value-general">0</div>
                 <div class="card-footer">Servicios de medicina general</div>
             </div>
-            
+
             <div class="card">
                 <div class="card-header">
                     <div class="card-title">Servicios Hoy</div>
-                    <div class="icon icon-today">
-                        <i class="fas fa-calendar-day"></i>
-                    </div>
+                    <div class="icon icon-today"><i class="fas fa-calendar-day"></i></div>
                 </div>
                 <div class="value value-today">0</div>
                 <div class="card-footer">Total de servicios realizados hoy</div>
             </div>
         </div>
-        
+
         <div class="upload-section">
             <h2 class="section-title"><i class="fas fa-file-upload"></i> Cargar Archivos para Reporte</h2>
-            
             <form id="uploadForm">
                 <div class="form-group">
-                    <label for="crystalFile">Archivo Crystal (fecha, servicio, nombreIPS, profesional):</label>
-                    <input type="file" class="file-input" id="crystalFile" name="crystal_file" accept=".csv,.xlsx,.xls" required>
+                    <label for="crystalFile">Archivo Crystal (.xlsx, .xls):</label>
+                    <input type="file" class="file-input" id="crystalFile" name="crystal_file" accept=".xlsx,.xls" required>
                 </div>
-                
                 <div class="form-group">
-                    <label for="queryFile">Archivo Query (fecha recepcion, nombre servicio, nombre sede, origen):</label>
-                    <input type="file" class="file-input" id="queryFile" name="query_file" accept=".csv,.xlsx,.xls" required>
+                    <label for="queryFile">Archivo Query (.xlsx, .xls):</label>
+                    <input type="file" class="file-input" id="queryFile" name="query_file" accept=".xlsx,.xls" required>
                 </div>
-                
                 <button type="submit" class="btn">Generar Reporte</button>
             </form>
-            
+
+            <div class="filter-section">
+                <label for="professional-filter">Filtrar por Profesional (Crystal):</label>
+                <select id="professional-filter">
+                    <option value="">Seleccionar Profesional</option>
+                </select>
+
+                <label for="user-filter">Filtrar por Profesional (Query):</label>
+                <select id="user-filter">
+                    <option value="">Seleccionar Profesional (Query)</option>
+                </select>
+                <button id="search-button" class="btn">Buscar</button>
+            </div>
+
             <div id="result" class="result"></div>
         </div>
+
+        <footer>
+            <p>© 2025 Control de Servicios Médicos</p>
+        </footer>
     </div>
 
->>>>>>> e83d37d9f89f2f2ed280f33a659167a77ab2bc7b
     <script src="/static/js/app.js"></script>
 </body>
 </html>
