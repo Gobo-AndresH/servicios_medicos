@@ -16,15 +16,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const userSelect = document.getElementById('filter-user');
     const filterButton = document.getElementById('filter-button');
 
+    // Subida de archivos
     uploadForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        resultDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Procesando archivos...</div>';
         resultDiv.style.display = 'block';
+        resultDiv.className = 'result';
+        resultDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Procesando archivos...</div>';
 
         const formData = new FormData(uploadForm);
 
         try {
-            const res = await fetch('/upload', { method:'POST', body: formData });
+            const res = await fetch('/upload', { method: 'POST', body: formData });
             const data = await res.json();
 
             if (!res.ok) {
@@ -41,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Filtrado
     filterButton.addEventListener('click', () => {
         if (!processedData) return alert("Primero sube los archivos");
         const prof = profSelect.value;
@@ -49,13 +52,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Mostrar resultados
+// Mostrar resultados generales
 function showResults(data) {
     const resultDiv = document.getElementById('result');
     resultDiv.className = 'result success';
     resultDiv.innerHTML = `
         <h3><i class="fas fa-check-circle"></i> Archivos procesados correctamente</h3>
-        <p>Total registros: ${data.stats.total || 0}</p>
+        <p>Total Servicios: ${data.stats.total || 0}</p>
+        <p>Urgencias: ${data.stats.urgencias || 0}</p>
+        <p>Medicina General: ${data.stats.general || 0}</p>
+        <p>Servicios Hoy: ${data.stats.hoy || 0}</p>
     `;
     updateDashboard(data.stats);
 }
@@ -76,7 +82,7 @@ function showError(data) {
     <p>${data.error || "Error desconocido"}</p>`;
 }
 
-// Filtrado
+// Vista filtrada
 function showFilteredView(data, professional, user) {
     let filtered = data.records || [];
     if (professional) filtered = filtered.filter(r => r.professional === professional);
@@ -85,7 +91,7 @@ function showFilteredView(data, professional, user) {
     const resultDiv = document.getElementById('result');
     if (filtered.length === 0) {
         resultDiv.className = 'result error';
-        resultDiv.innerHTML = 'No se encontraron registros con esos filtros.';
+        resultDiv.innerHTML = '<p>No se encontraron registros con esos filtros.</p>';
         return;
     }
 
@@ -110,16 +116,17 @@ function showFilteredView(data, professional, user) {
     resultDiv.innerHTML = html;
 }
 
-// Llenar filtros
+// Llenar filtros de manera única y ordenada
 function populateFilters(data) {
     const profSelect = document.getElementById('filter-prof');
     const userSelect = document.getElementById('filter-user');
+
     const professionals = [...new Set(data.records.map(r => r.professional))].sort();
     const users = [...new Set(data.records.map(r => r.user))].sort();
 
     profSelect.innerHTML = '<option value="">--Seleccionar--</option>';
-    professionals.forEach(p => { profSelect.innerHTML += `<option value="${p}">${p}</option>` });
+    professionals.forEach(p => profSelect.innerHTML += `<option value="${p}">${p}</option>`);
 
     userSelect.innerHTML = '<option value="">--Seleccionar--</option>';
-    users.forEach(u => { userSelect.innerHTML += `<option value="${u}">${u}</option>` });
+    users.forEach(u => userSelect.innerHTML += `<option value="${u}">${u}</option>`);
 }
