@@ -2,115 +2,129 @@ import os
 import re
 import logging
 import gc
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_cors import CORS
 import pandas as pd
 from werkzeug.utils import secure_filename
 
+# -------------------------
+# Configuración inicial
+# -------------------------
 app = Flask(__name__)
 CORS(app)
 
-# Configuración
 UPLOAD_FOLDER = 'uploads'
 QUERY_FOLDER = os.path.join(UPLOAD_FOLDER, 'query_filtered')
+STATIC_FOLDER = 'static'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(QUERY_FOLDER, exist_ok=True)
+os.makedirs(STATIC_FOLDER, exist_ok=True)
+
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB
+app.config['MAX_CONTENT_LENGTH'] = 25 * 1024 * 1024  # 25MB
 
 # Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Columnas
-col_prof = "Profesional"
-col_user_val = "Nombre Usuario Validación"
-col_serv = "Servicio"
-col_serv_name = "Nombre Servicio"
+COL_PROF = "Profesional"
+COL_USER_VAL = "Nombre Usuario Validación"
+COL_SERV = "Servicio"
+COL_SERV_NAME = "Nombre Servicio"
 
-# Categorías de servicios
-CATS = {'ecografia': ['ecografia', 'perfil biofisico'],
-        'mamografia': ['mamografia'],
-        'cervicometria': ['cervicometria'],
-        'rx': ['rx']}
+# Categorías
+CATEGORIES = {
+    'ecografia': ['ecografia', 'perfil biofisico'],
+    'mamografia': ['mamografia'],
+    'cervicometria': ['cervicometria'],
+    'rx': ['rx']
+}
 
-def sanitize(name):
+# -------------------------
+# Funciones auxiliares
+# -------------------------
+def sanitize_filename(name):
     name = str(name).title()
     name = re.sub(r'[<>:"/\\|?*]', '_', name)
     return name.strip()[:50]
 
-def categorize_service(serv):
-    serv = str(serv).lower().strip()
-    for cat, keys in CATS.items():
-        if any(k in serv for k in keys):
+def categorize_service(service):
+    service = str(service).lower().strip()
+    for cat, keywords in CATEGORIES.items():
+        if any(k in service for k in keywords):
             return cat
     return 'otros'
 
 def count_categories(df, col):
-    counts = {cat:0 for cat in CATS.keys()}
+    counts = {cat: 0 for cat in CATEGORIES.keys()}
     counts['otros'] = 0
     for val in df[col]:
         counts[categorize_service(val)] += 1
     return counts
 
-def count_details(df, col):
-    return df[col].value_counts().to_dict()
+# -------------------------
+# Procesamiento optimizado
+# -------------------------
+def process_excel_files(file1_path, file2_path):
+    professional_data = {}
+    user_data = {}
+    totals_crystal = {**{k:0 for k in CATEGORIES.keys()}, 'otros':0}
+    totals_query = {**{k:0 for k in CATEGORIES.keys()}, 'otros':0}
 
-def process_excel(file1, file2):
+    # Procesar archivo 1 (profesionales)
     try:
-        df1 = pd.read_excel(file1, engine='openpyxl')
-        df2 = pd.read_excel(file2, engine='openpyxl')
-
-        # Convertir columnas a tipo categoría cuando sea posible
-        for c in df1.select_dtypes(include='object').columns:
-            df1[c] = df1[c].astype('category')
-        for c in df2.select_dtypes(include='object').columns:
-            df2[c] = df2[c].astype('category')
-
-        # Procesar profesionales
-        profs = df1[col_prof].dropna().unique()
-        prof_data = {}
-        for p in profs:
-            df_p = df1[df1[col_prof]==p]
-            file_path = os.path.join(UPLOAD_FOLDER, f"{sanitize(p)}.xlsx")
-            df_p.to_excel(file_path, index=False, engine='openpyxl')
-            prof_data[p] = {
-                "count": len(df_p),
-                "services_by_category": count_categories(df_p, col_serv),
-                "details": count_details(df_p, col_serv)
-            }
-            del df_p
-        gc.collect()
-
-        # Procesar usuarios
-        users = df2[col_user_val].dropna().unique()
-        user_data = {}
-        for u in users:
-            df_u = df2[df2[col_user_val]==u]
-            file_path = os.path.join(QUERY_FOLDER, f"{sanitize(u)}.xlsx")
-            df_u.to_excel(file_path, index=False, engine='openpyxl')
-            user_data[u] = {
-                "count": len(df_u),
-                "services_by_category": count_categories(df_u, col_serv_name),
-                "details": count_details(df_u, col_serv_name)
-            }
-            del df_u
-        gc.collect()
-
-        return {
-            "success": True,
-            "professionals": list(profs),
-            "users": list(users),
-            "professional_data": prof_data,
-            "user_data": user_data,
-            "totals_crystal": count_categories(df1, col_serv),
-            "totals_query": count_categories(df2, col_serv_name),
-        }
-
+        for df_chunk in pd.read_excel(file1_path, engine='openpyxl', chunksize=1000):
+            df_chunk[COL_PROF] = df_chunk[COL_PROF].astype(str).str.strip()
+            df_chunk[COL_SERV] = df_chunk[COL_SERV].astype(str).str.strip()
+            for prof, df_p in df_chunk.groupby(COL_PROF):
+                file_path = os.path.join(UPLOAD_FOLDER, f"{sanitize_filename(prof)}.xlsx")
+                if os.path.exists(file_path):
+                    df_p.to_excel(file_path, index=False, engine='openpyxl', mode='a', header=False)
+                else:
+                    df_p.to_excel(file_path, index=False, engine='openpyxl')
+                counts = count_categories(df_p, COL_SERV)
+                for k, v in counts.items():
+                    totals_crystal[k] += v
+                professional_data[prof] = professional_data.get(prof, 0) + len(df_p)
+            del df_chunk
+            gc.collect()
     except Exception as e:
-        logger.exception("Error procesando archivos")
+        logger.error(f"Error procesando archivo profesional: {e}")
         return {"error": str(e)}
 
+    # Procesar archivo 2 (usuarios)
+    try:
+        for df_chunk in pd.read_excel(file2_path, engine='openpyxl', chunksize=1000):
+            df_chunk[COL_USER_VAL] = df_chunk[COL_USER_VAL].astype(str).str.strip()
+            df_chunk[COL_SERV_NAME] = df_chunk[COL_SERV_NAME].astype(str).str.strip()
+            for user, df_u in df_chunk.groupby(COL_USER_VAL):
+                file_path = os.path.join(QUERY_FOLDER, f"{sanitize_filename(user)}.xlsx")
+                if os.path.exists(file_path):
+                    df_u.to_excel(file_path, index=False, engine='openpyxl', mode='a', header=False)
+                else:
+                    df_u.to_excel(file_path, index=False, engine='openpyxl')
+                counts = count_categories(df_u, COL_SERV_NAME)
+                for k, v in counts.items():
+                    totals_query[k] += v
+                user_data[user] = user_data.get(user, 0) + len(df_u)
+            del df_chunk
+            gc.collect()
+    except Exception as e:
+        logger.error(f"Error procesando archivo usuario: {e}")
+        return {"error": str(e)}
+
+    return {
+        "success": True,
+        "professional_counts": professional_data,
+        "user_counts": user_data,
+        "totals_crystal": totals_crystal,
+        "totals_query": totals_query
+    }
+
+# -------------------------
+# Rutas Flask
+# -------------------------
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -118,17 +132,28 @@ def index():
 @app.route('/upload', methods=['POST'])
 def upload():
     if 'file1' not in request.files or 'file2' not in request.files:
-        return jsonify({"error":"Faltan archivos"}), 400
+        return jsonify({"error": "Faltan archivos"}), 400
+
     f1 = request.files['file1']
     f2 = request.files['file2']
-    if f1.filename=='' or f2.filename=='':
-        return jsonify({"error":"Archivos vacíos"}), 400
+
+    if f1.filename == '' or f2.filename == '':
+        return jsonify({"error": "Archivos vacíos"}), 400
+
     path1 = os.path.join(UPLOAD_FOLDER, secure_filename(f1.filename))
     path2 = os.path.join(UPLOAD_FOLDER, secure_filename(f2.filename))
     f1.save(path1)
     f2.save(path2)
-    res = process_excel(path1, path2)
-    return jsonify(res)
 
+    result = process_excel_files(path1, path2)
+    return jsonify(result)
+
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    return send_from_directory(STATIC_FOLDER, filename)
+
+# -------------------------
+# Main
+# -------------------------
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=10000)
