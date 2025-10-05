@@ -75,14 +75,29 @@ function showFilteredView(data, professional, user) {
         return;
     }
 
-    let html = `<h3>Resultados filtrados (${filtered.length})</h3><table><thead><tr><th>Profesional</th><th>Usuario</th><th>Servicio</th><th>Fecha</th></tr></thead><tbody>`;
+    // Generación de tabla responsiva
+    let html = `<div class="table-responsive"><table><thead><tr>
+        <th>Profesional</th>
+        <th>Usuario</th>
+        <th>Servicio</th>
+        <th>Fecha</th>
+        </tr></thead><tbody>`;
+
     filtered.forEach(r => {
-        html += `<tr><td>${r.professional}</td><td>${r.user}</td><td>${r.service}</td><td>${r.date}</td></tr>`;
+        html += `<tr>
+            <td>${r.professional}</td>
+            <td>${r.user}</td>
+            <td>${r.service}</td>
+            <td>${r.date}</td>
+        </tr>`;
     });
-    html += '</tbody></table>';
+
+    html += '</tbody></table></div>';
 
     resultDiv.className = 'result success';
     resultDiv.innerHTML = html;
+}
+
 }
 
 function populateFilters(data) {
