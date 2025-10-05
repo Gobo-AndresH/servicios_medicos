@@ -1,71 +1,73 @@
-let currentController = null;
+// Crear un controlador para abortar la solicitud
+let abortController = null;
 
 function uploadFiles() {
-    const file1 = document.getElementById('file1-input').files[0];
-    const file2 = document.getElementById('file2-input').files[0];
+    const file1Input = document.getElementById('file1-input');
+    const file2Input = document.getElementById('file2-input');
+    const file1 = file1Input?.files[0];
+    const file2 = file2Input?.files[0];
     const resultDiv = document.getElementById('result');
     const loadingDiv = document.getElementById('loading');
 
     if (!file1 || !file2) {
-        resultDiv.innerHTML = "<p style='color:red;'>Por favor selecciona ambos archivos.</p>";
+        resultDiv.innerHTML = `<div style="color:red;">Por favor, selecciona ambos archivos.</div>`;
         resultDiv.style.display = 'block';
         return;
     }
+
+    // Mostrar carga y botón de cancelar
+    loadingDiv.style.display = 'block';
+    resultDiv.style.display = 'none';
+    const cancelButton = document.createElement('button');
+    cancelButton.textContent = "Cancelar envío";
+    cancelButton.style = "margin-top:10px; background-color:#dc3545; color:white; padding:8px 12px; border:none; border-radius:5px; cursor:pointer;";
+    cancelButton.onclick = () => {
+        if (abortController) {
+            abortController.abort();
+            loadingDiv.innerHTML = `<div style="color:red;">Envío cancelado por el usuario.</div>`;
+        }
+    };
+    loadingDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Procesando archivos...`;
+    loadingDiv.appendChild(cancelButton);
 
     const formData = new FormData();
     formData.append('file1', file1);
     formData.append('file2', file2);
 
-    // Crear AbortController para cancelar
-    currentController = new AbortController();
+    abortController = new AbortController();
 
-    loadingDiv.style.display = 'block';
-    resultDiv.style.display = 'none';
-
-    fetch('/upload', {
+    fetch('https://servicios-medicos-n3bl.onrender.com/upload', {
         method: 'POST',
         body: formData,
-        signal: currentController.signal
+        signal: abortController.signal
     })
-    .then(response => response.json())
+    .then(async response => {
+        const text = await response.text();
+        try {
+            const data = JSON.parse(text);
+            if (!response.ok) throw new Error(data.error || `Error HTTP: ${response.status}`);
+            return data;
+        } catch (err) {
+            throw new Error("El servidor devolvió una respuesta no válida. Verifica la consola o el backend.");
+        }
+    })
     .then(data => {
         loadingDiv.style.display = 'none';
         if (data.error) {
-            resultDiv.innerHTML = `<p style='color:red;'>Error: ${data.error}</p>`;
+            resultDiv.innerHTML = `<div style="color:red;">Error: ${data.error}</div>`;
+            resultDiv.style.display = 'block';
         } else {
-            resultDiv.innerHTML = "<h3>Archivos procesados:</h3>";
-            data.files.forEach(f => {
-                const link = document.createElement('a');
-                link.href = f.url;
-                link.download = '';
-                link.textContent = `Descargar ${f.name}`;
-                link.target = '_blank';
-                link.click(); // 🔽 Descarga automática
-                resultDiv.appendChild(link);
-                resultDiv.appendChild(document.createElement('br'));
-            });
+            processedData = data;
+            mostrarResultados(data);
         }
-        resultDiv.style.display = 'block';
     })
     .catch(error => {
-        loadingDiv.style.display = 'none';
         if (error.name === 'AbortError') {
-            resultDiv.innerHTML = "<p style='color:orange;'>Operación cancelada.</p>";
-        } else {
-            resultDiv.innerHTML = `<p style='color:red;'>Error: ${error.message}</p>`;
+            console.warn("Solicitud cancelada por el usuario.");
+            return;
         }
+        loadingDiv.style.display = 'none';
+        resultDiv.innerHTML = `<div style="color:red;">Error: ${error.message}</div>`;
         resultDiv.style.display = 'block';
     });
 }
-
-function cancelUpload() {
-    if (currentController) {
-        currentController.abort();
-        currentController = null;
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('process-button').addEventListener('click', uploadFiles);
-    document.getElementById('cancel-button').addEventListener('click', cancelUpload);
-});
