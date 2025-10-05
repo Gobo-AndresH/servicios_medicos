@@ -1,68 +1,82 @@
+// Service Worker PWA
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+        .then(reg => console.log('SW registrado:', reg.scope))
+        .catch(err => console.error('SW falló:', err));
+    });
+}
+
 let processedData = null;
 
-// Validación de carga de archivos y envío
 document.addEventListener('DOMContentLoaded', () => {
     const uploadForm = document.getElementById('uploadForm');
-    const searchButton = document.getElementById('search-button');
+    const resultDiv = document.getElementById('result');
+    const profSelect = document.getElementById('filter-prof');
+    const userSelect = document.getElementById('filter-user');
+    const filterButton = document.getElementById('filter-button');
 
-    uploadForm.addEventListener('submit', async e => {
+    uploadForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const resultDiv = document.getElementById('result');
-        const crystalFile = document.getElementById('crystalFile').files[0];
-        const queryFile = document.getElementById('queryFile').files[0];
-
-        if (!crystalFile || !queryFile) {
-            alert('Por favor, selecciona ambos archivos.');
-            return;
-        }
-
+        resultDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Procesando archivos...</div>';
         resultDiv.style.display = 'block';
-        resultDiv.className = 'result';
-        resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando archivos...';
 
-        const formData = new FormData();
-        formData.append('crystal_file', crystalFile);
-        formData.append('query_file', queryFile);
+        const formData = new FormData(uploadForm);
 
         try {
-            const response = await fetch('/upload', { method: 'POST', body: formData });
-            const data = await response.json();
+            const res = await fetch('/upload', { method:'POST', body: formData });
+            const data = await res.json();
 
-            if (response.ok) {
-                processedData = data;
-                showGlobalView(data);
-                populateFilters(data);
-            } else {
-                resultDiv.className = 'result error';
-                resultDiv.innerHTML = data.message || 'Error procesando los archivos.';
+            if (!res.ok) {
+                showError(data);
+                return;
             }
-        } catch (err) {
-            resultDiv.className = 'result error';
-            resultDiv.innerHTML = 'Error de conexión.';
-            console.error(err);
+
+            processedData = data;
+            showResults(data);
+            populateFilters(data);
+
+        } catch(err) {
+            showError({ error: err.message });
         }
     });
 
-    searchButton.addEventListener('click', () => {
-        if (!processedData) return;
-        const professional = document.getElementById('professional-filter').value;
-        const user = document.getElementById('user-filter').value;
-        showFilteredView(processedData, professional, user);
+    filterButton.addEventListener('click', () => {
+        if (!processedData) return alert("Primero sube los archivos");
+        const prof = profSelect.value;
+        const user = userSelect.value;
+        showFilteredView(processedData, prof, user);
     });
 });
 
-function showGlobalView(data) {
-    document.querySelector('.value-total').textContent = data.totalServices || 0;
-    document.querySelector('.value-urgencias').textContent = data.urgencias || 0;
-    document.querySelector('.value-general').textContent = data.medicinaGeneral || 0;
-    document.querySelector('.value-today').textContent = data.servicesToday || 0;
-
+// Mostrar resultados
+function showResults(data) {
     const resultDiv = document.getElementById('result');
-    resultDiv.style.display = 'block';
     resultDiv.className = 'result success';
-    resultDiv.innerHTML = 'Archivos procesados correctamente.';
+    resultDiv.innerHTML = `
+        <h3><i class="fas fa-check-circle"></i> Archivos procesados correctamente</h3>
+        <p>Total registros: ${data.stats.total || 0}</p>
+    `;
+    updateDashboard(data.stats);
 }
 
+// Actualizar dashboard
+function updateDashboard(stats) {
+    document.querySelector('.value-total').textContent = stats.total || 0;
+    document.querySelector('.value-urgencias').textContent = stats.urgencias || 0;
+    document.querySelector('.value-general').textContent = stats.general || 0;
+    document.querySelector('.value-today').textContent = stats.hoy || 0;
+}
+
+// Mostrar errores
+function showError(data) {
+    const resultDiv = document.getElementById('result');
+    resultDiv.className = 'result error';
+    resultDiv.innerHTML = `<h3><i class="fas fa-exclamation-circle"></i> Error</h3>
+    <p>${data.error || "Error desconocido"}</p>`;
+}
+
+// Filtrado
 function showFilteredView(data, professional, user) {
     let filtered = data.records || [];
     if (professional) filtered = filtered.filter(r => r.professional === professional);
@@ -75,7 +89,6 @@ function showFilteredView(data, professional, user) {
         return;
     }
 
-    // Generación de tabla responsiva
     let html = `<div class="table-responsive"><table><thead><tr>
         <th>Profesional</th>
         <th>Usuario</th>
@@ -93,20 +106,20 @@ function showFilteredView(data, professional, user) {
     });
 
     html += '</tbody></table></div>';
-
     resultDiv.className = 'result success';
     resultDiv.innerHTML = html;
 }
 
-}
-
+// Llenar filtros
 function populateFilters(data) {
-    const professionalSelect = document.getElementById('professional-filter');
-    const userSelect = document.getElementById('user-filter');
+    const profSelect = document.getElementById('filter-prof');
+    const userSelect = document.getElementById('filter-user');
+    const professionals = [...new Set(data.records.map(r => r.professional))].sort();
+    const users = [...new Set(data.records.map(r => r.user))].sort();
 
-    const professionals = [...new Set((data.records || []).map(r => r.professional))];
-    const users = [...new Set((data.records || []).map(r => r.user))];
+    profSelect.innerHTML = '<option value="">--Seleccionar--</option>';
+    professionals.forEach(p => { profSelect.innerHTML += `<option value="${p}">${p}</option>` });
 
-    professionalSelect.innerHTML = `<option value="">Seleccionar Profesional</option>` + professionals.map(p => `<option value="${p}">${p}</option>`).join('');
-    userSelect.innerHTML = `<option value="">Seleccionar Profesional (Query)</option>` + users.map(u => `<option value="${u}">${u}</option>`).join('');
+    userSelect.innerHTML = '<option value="">--Seleccionar--</option>';
+    users.forEach(u => { userSelect.innerHTML += `<option value="${u}">${u}</option>` });
 }
