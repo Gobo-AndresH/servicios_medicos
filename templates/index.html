@@ -1,56 +1,45 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#007bff">
-    <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" href="/static/icon-192.png">
-    <link rel="icon" href="/static/favicon.ico">
-    <title>Control de Servicios Médicos</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <title>Procesador de Estudios Médicos</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://kit.fontawesome.com/a2d9b8e7e5.js" crossorigin="anonymous"></script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="logo">📋 Control de Servicios Médicos</div>
-            <div class="subtitle">Sistema de filtrado y análisis de archivos Excel</div>
-        </header>
+  <div class="container">
+    <header>
+      <h1 class="logo">📊 Procesador de Estudios Médicos</h1>
+      <p class="subtitle">Virrey Solís - Reporte mensual por atención</p>
+    </header>
 
-        <main>
-            <section class="upload-section">
-                <label for="file1-input">Archivo Crystal (Profesional):</label>
-                <input type="file" id="file1-input" name="file1" accept=".xlsx,.xls" required>
+    <section class="upload-section">
+      <label>Archivo Crystal: <input type="file" id="file1-input" accept=".xlsx,.xls" /></label><br>
+      <label>Archivo Query: <input type="file" id="file2-input" accept=".xlsx,.xls" /></label><br>
+      <button id="process-button">Procesar Archivos</button>
 
-                <label for="file2-input">Archivo Query (Nombre Usuario Validación):</label>
-                <input type="file" id="file2-input" name="file2" accept=".xlsx,.xls" required>
+      <!-- Barra de progreso -->
+      <div id="progress-container" style="display:none;">
+        <div id="progress-bar"></div>
+        <span id="progress-text">Procesando... 0%</span>
+      </div>
 
-                <div class="button-group">
-                    <button id="process-button" class="btn-primary">
-                        <i class="fas fa-upload"></i> Procesar Archivos
-                    </button>
-                    <button id="cancel-button" class="btn-danger">
-                        <i class="fas fa-times"></i> Cancelar
-                    </button>
-                </div>
-            </section>
+      <div id="loading" style="display:none;"></div>
+      <div id="result" style="display:none;">
+        <div id="global-data"></div>
+        <div id="person-data" style="display:none;"></div>
+      </div>
+    </section>
 
-            <div id="loading" class="loading" style="display:none;">
-                <i class="fas fa-spinner fa-spin"></i> Procesando archivos, por favor espera...
-            </div>
+    <section class="filter-section">
+      <select id="professional-filter"></select>
+      <select id="user-filter"></select>
+      <button id="search-button">Filtrar</button>
+    </section>
 
-            <section id="result" class="result-section" style="display:none;">
-                <h3>Resultados:</h3>
-                <div id="result-content"></div>
-            </section>
-        </main>
+    <footer>Desarrollado por Fernanda Rodríguez © 2025</footer>
+  </div>
 
-        <footer>
-            <p>© 2025 Control de Servicios Médicos - Optimizado para Render</p>
-        </footer>
-    </div>
-
-    <script src="/static/js/app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
