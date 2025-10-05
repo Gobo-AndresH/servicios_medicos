@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file, abort
+from flask import Flask, request, jsonify, send_file
 import pandas as pd
 import numpy as np
 import os
@@ -7,33 +7,52 @@ import psutil
 from openpyxl import Workbook
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # hasta 20MB
+app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # Hasta 20MB
 
 # ========================================================
-# FUNCION PRINCIPAL: PROCESAMIENTO OPTIMIZADO DE EXCEL
+# FUNCIÓN OPTIMIZADA DE LECTURA DE EXCEL
 # ========================================================
+
+def read_large_excel(path):
+    """
+    Lectura optimizada de Excel sin chunksize.
+    Convierte columnas numéricas y libera memoria.
+    """
+    print(f"📘 Leyendo archivo: {os.path.basename(path)} ...")
+
+    # Leer Excel completo (sin chunksize)
+    df = pd.read_excel(path, engine='openpyxl')
+
+    # Convertir tipos de datos para reducir RAM
+    for col in df.select_dtypes(include=['float64']).columns:
+        df[col] = pd.to_numeric(df[col], downcast='float')
+
+    for col in df.select_dtypes(include=['int64']).columns:
+        df[col] = pd.to_numeric(df[col], downcast='integer')
+
+    df.columns = df.columns.str.strip().str.lower()
+
+    gc.collect()
+    print(f"✅ Archivo {os.path.basename(path)} leído: {len(df)} filas, {len(df.columns)} columnas.")
+    return df
+
+# ========================================================
+# PROCESAMIENTO DE LOS ARCHIVOS
+# ========================================================
+
 def process_excel(file1_path, file2_path):
+    """
+    Procesa dos archivos Excel, genera totales globales y archivos individuales.
+    """
     output_dir = "/tmp"
     os.makedirs(output_dir, exist_ok=True)
-    chunksize = 5000  # procesa en partes
+    print("🧩 Iniciando procesamiento...")
 
-    print("🧩 Iniciando procesamiento optimizado...")
-
-    def read_large_excel(path):
-        chunks = []
-        for chunk in pd.read_excel(path, chunksize=chunksize, engine='openpyxl'):
-            chunks.append(chunk)
-        df = pd.concat(chunks, ignore_index=True)
-        del chunks
-        gc.collect()
-        return df
-
+    # Leer archivos
     df1 = read_large_excel(file1_path)
     df2 = read_large_excel(file2_path)
 
-    df1.columns = df1.columns.str.strip().str.lower()
-    df2.columns = df2.columns.str.strip().str.lower()
-
+    # Detectar columnas relevantes
     col_prof = next((c for c in df1.columns if 'profesional' in c), None)
     col_user = next((c for c in df2.columns if 'profesional' in c), None)
     col_serv1 = next((c for c in df1.columns if 'servicio' in c), None)
@@ -56,9 +75,10 @@ def process_excel(file1_path, file2_path):
     servicios_detallados_crystal = df1.groupby(col_serv1).size().to_dict()
     servicios_detallados_query = df2.groupby(col_serv2).size().to_dict()
 
-    professional_data, user_data = {}, {}
+    professional_data = {}
+    user_data = {}
 
-    # Procesar profesionales
+    # ================= PROFESIONALES =================
     for prof in professionals:
         df_prof = df1[df1[col_prof] == prof]
         if not df_prof.empty:
@@ -76,7 +96,7 @@ def process_excel(file1_path, file2_path):
             del df_prof
             gc.collect()
 
-    # Procesar usuarios
+    # ================= USUARIOS =================
     for usr in users:
         df_user = df2[df2[col_user] == usr]
         if not df_user.empty:
@@ -96,6 +116,7 @@ def process_excel(file1_path, file2_path):
 
     del df1, df2
     gc.collect()
+
     mem = psutil.virtual_memory()
     print(f"✅ Procesamiento completo. Uso de memoria: {mem.percent}%")
 
@@ -118,24 +139,44 @@ def process_excel(file1_path, file2_path):
         "user_data": user_data,
     }
 
-
 # ========================================================
 # ENDPOINTS FLASK
 # ========================================================
+
 @app.route('/upload', methods=['POST'])
 def upload():
     try:
         file1 = request.files.get('file1')
         file2 = request.files.get('file2')
+
         if not file1 or not file2:
             return jsonify({"error": "Debes subir ambos archivos."}), 400
+
+        # Detección de tamaño (para advertir al frontend)
+        size_limit_mb = 15
+        file1_size = len(file1.read()) / (1024 * 1024)
+        file2_size = len(file2.read()) / (1024 * 1024)
+        file1.seek(0)
+        file2.seek(0)
+
+        warning = None
+        if file1_size > size_limit_mb or file2_size > size_limit_mb:
+            warning = f"⚠️ Archivos grandes detectados ({round(max(file1_size, file2_size),2)} MB). Esto puede tardar varios minutos."
+
         file1_path = os.path.join("/tmp", file1.filename)
         file2_path = os.path.join("/tmp", file2.filename)
         file1.save(file1_path)
         file2.save(file2_path)
+
         data = process_excel(file1_path, file2_path)
+
+        if warning:
+            data["warning"] = warning
+
         return jsonify(data)
+
     except Exception as e:
+        print(f"❌ Error en /upload: {e}")
         return jsonify({"error": str(e)}), 500
 
 
