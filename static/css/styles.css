@@ -1,159 +1,167 @@
-/* ======== ESTILO GENERAL ======== */
 body {
-    font-family: 'Segoe UI', Arial, sans-serif;
+    font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f4f8fc;
+    background-color: #e6f0fa;
     color: #333;
 }
 
 .container {
-    max-width: 1000px;
-    margin: 30px auto;
-    background-color: #fff;
-    border-radius: 15px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    overflow: hidden;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
 }
 
 header {
     text-align: center;
-    background-color: #007bff;
-    color: white;
-    padding: 20px;
+    padding: 10px 0;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .logo {
     font-size: 24px;
     font-weight: bold;
+    color: #007bff;
 }
 
 .subtitle {
     font-size: 14px;
-    opacity: 0.9;
+    color: #666;
 }
 
-/* ======== SECCIÓN DE CARGA ======== */
 .upload-section {
+    margin: 20px 0;
     text-align: center;
-    padding: 30px 20px;
-    border-bottom: 1px solid #eaeaea;
 }
 
-.upload-section label {
-    display: block;
-    margin: 15px 0 5px;
-    font-weight: bold;
-    color: #555;
-}
-
-.upload-section input[type="file"] {
-    margin-bottom: 15px;
-    padding: 6px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-}
-
-.button-group {
-    margin-top: 20px;
-}
-
-/* ======== BOTONES ======== */
-button {
+.upload-section button,
+.filter-section button,
+.cancel-button {
     padding: 10px 20px;
-    font-size: 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: 0.3s;
+    background-color: #007bff;
+    color: #fff;
     border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 5px;
+    transition: background-color 0.2s ease-in-out;
 }
 
-.btn-primary {
+.upload-section button:hover,
+.filter-section button:hover {
+    background-color: #0056b3;
+}
+
+.cancel-button {
+    background-color: #dc3545;
+}
+
+.cancel-button:hover {
+    background-color: #b02a37;
+}
+
+.download-button {
+    display: inline-block;
+    margin: 10px 0;
+    background-color: #007bff;
+    color: #fff;
+    padding: 10px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.download-button:hover {
+    background-color: #0056b3;
+}
+
+.filter-section {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.filter-section select {
+    padding: 8px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    width: 200px;
+    margin: 0 10px;
+}
+
+.card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    text-align: center;
+    width: 20%;
+    display: inline-block;
+    margin: 10px;
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: scale(1.05);
+}
+
+.card h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #666;
+}
+
+.card .count {
+    font-size: 36px;
+    font-weight: bold;
+    color: #007bff;
+    margin: 10px 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+th {
     background-color: #007bff;
     color: #fff;
 }
 
-.btn-primary:hover {
-    background-color: #0056b3;
-}
-
-.btn-danger {
-    background-color: #dc3545;
-    color: #fff;
-    margin-left: 10px;
-}
-
-.btn-danger:hover {
-    background-color: #a71d2a;
-}
-
-/* ======== LOADING ======== */
-.loading {
+#loading {
     text-align: center;
-    font-size: 18px;
-    padding: 15px;
-    color: #007bff;
-    background-color: #eef5ff;
-    border-radius: 10px;
-    margin: 15px auto;
-    width: 80%;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    margin: 10px 0;
 }
 
-/* ======== RESULTADOS ======== */
-.result-section {
-    padding: 20px;
-}
-
-.result-section h3 {
-    text-align: center;
-    color: #007bff;
-}
-
-.result-section a {
-    display: inline-block;
-    background-color: #28a745;
+#back-button {
+    padding: 8px 15px;
+    background-color: #6c757d;
     color: white;
-    text-decoration: none;
-    padding: 10px 15px;
-    border-radius: 6px;
-    margin: 5px;
-    font-size: 15px;
-    transition: background-color 0.3s;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
 }
 
-.result-section a:hover {
-    background-color: #1e7e34;
+#back-button:hover {
+    background-color: #5a6268;
 }
 
-.result-section p {
-    text-align: center;
-    font-size: 15px;
-}
-
-/* ======== FOOTER ======== */
 footer {
     text-align: center;
-    background-color: #f8f9fa;
-    padding: 15px;
-    font-size: 13px;
-    color: #777;
-}
-
-/* ======== RESPONSIVE ======== */
-@media (max-width: 768px) {
-    .container {
-        margin: 10px;
-    }
-
-    button {
-        display: block;
-        width: 90%;
-        margin: 10px auto;
-    }
-
-    .result-section a {
-        display: block;
-        width: 90%;
-        margin: 10px auto;
-    }
+    padding: 10px 0;
+    margin-top: 20px;
+    color: #666;
 }
