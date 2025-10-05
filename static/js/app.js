@@ -22,7 +22,7 @@ function showToast(message, type = "info") {
   setTimeout(() => {
     toast.classList.remove("show");
     setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  }, 4000);
 }
 
 // ============================================================
@@ -49,6 +49,12 @@ function uploadFiles() {
     return;
   }
 
+  // Verificación de tamaño (para mostrar advertencia antes de subir)
+  const sizeLimit = 15 * 1024 * 1024; // 15 MB
+  if (file1.size > sizeLimit || file2.size > sizeLimit) {
+    showToast(`⚠️ Archivos grandes detectados (${Math.max(file1.size, file2.size) / (1024 * 1024) | 0} MB). Esto puede tardar varios minutos.`, "warning");
+  }
+
   loadingDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Procesando archivos...`;
   loadingDiv.style.display = 'block';
   resultDiv.style.display = 'none';
@@ -63,7 +69,7 @@ function uploadFiles() {
     progress = Math.min(progress + Math.random() * 8, 95);
     progressBar.style.width = `${progress}%`;
     progressText.textContent = `Procesando... ${Math.floor(progress)}%`;
-  }, 500);
+  }, 600);
 
   // Botón de cancelar
   const cancelButton = document.createElement('button');
@@ -107,6 +113,11 @@ function uploadFiles() {
       progressText.textContent = '✅ Procesamiento completado';
       setTimeout(() => progressContainer.style.display = 'none', 1500);
       loadingDiv.style.display = 'none';
+
+      // Mostrar advertencia si el backend detectó archivos grandes
+      if (data.warning) {
+        showToast(data.warning, "warning");
+      }
 
       if (data.error) {
         showToast(data.error, "error");
@@ -218,16 +229,6 @@ function showFilteredView(type, name) {
       .finally(() => finishDownloadProgress());
   };
   personSection.appendChild(downloadButton);
-
-  const resumenDiv = document.createElement('div');
-  resumenDiv.className = 'servicios-categoria';
-  mostrarResumenServicios(toTitleCase(name), personData.servicios_por_categoria, fileType, resumenDiv);
-  personSection.appendChild(resumenDiv);
-
-  const detalladosDiv = document.createElement('div');
-  detalladosDiv.className = 'detallados-servicios';
-  mostrarResumenDetallados(toTitleCase(name), personData.servicios_detallados, fileType, detalladosDiv);
-  personSection.appendChild(detalladosDiv);
 }
 
 // ============================================================
