@@ -3,42 +3,51 @@ if (window.location.protocol === 'file:') {
     alert("Por favor, abre esta aplicación desde el servidor Flask (Render) en https://servicios-medicos-n3bl.onrender.com/");
 }
 
-// Registrar Service Worker para PWA
+// Registrar Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/service-worker.js')
-            .then(reg => console.log('Service Worker registrado con alcance:', reg.scope))
+            .then(reg => console.log('Service Worker registrado:', reg.scope))
             .catch(err => console.error('Error al registrar Service Worker:', err));
     });
 }
 
 let processedData = null;
-let abortController = null; // Controlador global para cancelar el envío
+let abortController = null; // Controlador para cancelar el envío
+
+// 🟡 Función para mostrar notificaciones tipo “toast”
+function showToast(message, type = "info") {
+    const toast = document.createElement("div");
+    toast.className = `toast-message ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add("show");
+    }, 50);
+    setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
 
 function uploadFiles() {
-    const file1Input = document.getElementById('file1-input');
-    const file2Input = document.getElementById('file2-input');
-    const file1 = file1Input?.files[0];
-    const file2 = file2Input?.files[0];
+    const file1 = document.getElementById('file1-input')?.files[0];
+    const file2 = document.getElementById('file2-input')?.files[0];
     const resultDiv = document.getElementById('result');
     const loadingDiv = document.getElementById('loading');
 
-    // Validaciones básicas
     if (!file1 || !file2) {
-        resultDiv.innerHTML = `<div style="color:red;">Por favor, selecciona ambos archivos.</div>`;
-        resultDiv.style.display = 'block';
+        showToast("Por favor, selecciona ambos archivos.", "error");
         return;
     }
 
     const validExtensions = ['xlsx', 'xls'];
     if (!validExtensions.includes(file1.name.split('.').pop().toLowerCase()) ||
         !validExtensions.includes(file2.name.split('.').pop().toLowerCase())) {
-        resultDiv.innerHTML = `<div style="color:red;">Solo se permiten archivos Excel (.xlsx o .xls).</div>`;
-        resultDiv.style.display = 'block';
+        showToast("Solo se permiten archivos Excel (.xlsx o .xls).", "error");
         return;
     }
 
-    // Mostrar carga con botón de cancelar
     loadingDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Procesando archivos...`;
     loadingDiv.style.display = 'block';
     resultDiv.style.display = 'none';
@@ -49,7 +58,8 @@ function uploadFiles() {
     cancelButton.onclick = () => {
         if (abortController) {
             abortController.abort();
-            loadingDiv.innerHTML = `<div style="color:red;">⛔ Envío cancelado por el usuario.</div>`;
+            loadingDiv.innerHTML = `<div style="color:red;">⛔ Envío cancelado.</div>`;
+            showToast("⛔ Envío cancelado por el usuario.", "warning");
         }
     };
     loadingDiv.appendChild(cancelButton);
@@ -72,27 +82,25 @@ function uploadFiles() {
             if (!response.ok) throw new Error(data.error || `Error HTTP: ${response.status}`);
             return data;
         } catch {
-            throw new Error("⚠️ El servidor devolvió una respuesta no válida. Verifica la consola o el backend.");
+            throw new Error("⚠️ El servidor devolvió una respuesta no válida. Verifica el backend.");
         }
     })
     .then(data => {
         loadingDiv.style.display = 'none';
         if (data.error) {
+            showToast(data.error, "error");
             resultDiv.innerHTML = `<div style="color:red;">Error: ${data.error}</div>`;
             resultDiv.style.display = 'block';
         } else {
+            showToast("✅ Archivos procesados correctamente.", "success");
             processedData = data;
             mostrarResultados(data);
         }
     })
     .catch(error => {
-        if (error.name === 'AbortError') {
-            console.warn("Solicitud cancelada por el usuario.");
-            return;
-        }
+        if (error.name === 'AbortError') return;
         loadingDiv.style.display = 'none';
-        resultDiv.innerHTML = `<div style="color:red;">Error: ${error.message}</div>`;
-        resultDiv.style.display = 'block';
+        showToast(`Error: ${error.message}`, "error");
     });
 }
 
@@ -167,6 +175,9 @@ function showFilteredView(type, name) {
         downloadButton.className = 'download-button';
         downloadButton.textContent = "⬇️ Descargar Excel filtrado";
         downloadButton.target = "_blank";
+        downloadButton.onclick = () => {
+            showToast("📁 Descarga iniciada...", "info");
+        };
         personSection.appendChild(downloadButton);
 
         const resumenDiv = document.createElement('div');
@@ -179,7 +190,7 @@ function showFilteredView(type, name) {
         mostrarResumenDetallados(toTitleCase(name), personData.servicios_detallados, fileType, detalladosDiv);
         personSection.appendChild(detalladosDiv);
     } else {
-        alert('No se encontraron datos para el profesional o usuario seleccionado.');
+        showToast('No se encontraron datos para el profesional o usuario.', 'warning');
     }
 }
 
@@ -238,25 +249,20 @@ function mostrarResumenDetallados(nombre, servicios, fileType, container) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const processButton = document.getElementById('process-button');
-    const searchButton = document.getElementById('search-button');
-
-    if (processButton) processButton.addEventListener('click', uploadFiles);
-    if (searchButton) {
-        searchButton.addEventListener('click', () => {
-            if (!processedData) {
-                alert("Primero debes procesar los archivos.");
-                return;
-            }
-            const prof = document.getElementById('professional-filter').value;
-            const user = document.getElementById('user-filter').value;
-            if (prof && user) {
-                alert("Selecciona solo uno: Profesional o Usuario.");
-                return;
-            }
-            if (prof) showFilteredView('prof', prof);
-            else if (user) showFilteredView('user', user);
-            else showGlobalView(processedData);
-        });
-    }
+    document.getElementById('process-button')?.addEventListener('click', uploadFiles);
+    document.getElementById('search-button')?.addEventListener('click', () => {
+        if (!processedData) {
+            showToast("Primero debes procesar los archivos.", "warning");
+            return;
+        }
+        const prof = document.getElementById('professional-filter').value;
+        const user = document.getElementById('user-filter').value;
+        if (prof && user) {
+            showToast("Selecciona solo uno: Profesional o Usuario.", "warning");
+            return;
+        }
+        if (prof) showFilteredView('prof', prof);
+        else if (user) showFilteredView('user', user);
+        else showGlobalView(processedData);
+    });
 });
