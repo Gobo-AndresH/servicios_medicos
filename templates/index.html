@@ -3,86 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#2c6aa0">
-    <link rel="manifest" href="/static/manifest.json">
-    <link rel="apple-touch-icon" href="/static/icon-192.png">
-    <link rel="icon" href="/static/favicon.ico">
     <title>Control de Servicios Médicos</title>
     <link rel="stylesheet" href="/static/css/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/static/favicon.ico">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
 </head>
 <body>
-<div class="container">
-    <header>
-        <h1><i class="fas fa-stethoscope"></i> Control de Servicios Médicos</h1>
-        <p class="subtitle">Sistema de registro y seguimiento de servicios</p>
-    </header>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-stethoscope"></i> Control de Servicios Médicos</h1>
+            <p class="subtitle">Sistema de registro para Urgencias y Medicina General</p>
+        </header>
 
-    <div class="dashboard">
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">Total Servicios</div>
-                <div class="icon icon-total"><i class="fas fa-procedures"></i></div>
+        <div class="dashboard">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Total Servicios</div>
+                    <div class="icon icon-total"><i class="fas fa-procedures"></i></div>
+                </div>
+                <div class="value value-total">0</div>
+                <div class="card-footer">Registros totales en el sistema</div>
             </div>
-            <div class="value value-total">0</div>
-            <div class="card-footer">Registros totales en el sistema</div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Urgencias</div>
+                    <div class="icon icon-urgencias"><i class="fas fa-ambulance"></i></div>
+                </div>
+                <div class="value value-urgencias">0</div>
+                <div class="card-footer">Servicios de urgencias hoy</div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Medicina General</div>
+                    <div class="icon icon-general"><i class="fas fa-user-md"></i></div>
+                </div>
+                <div class="value value-general">0</div>
+                <div class="card-footer">Servicios de medicina general</div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Servicios Hoy</div>
+                    <div class="icon icon-today"><i class="fas fa-calendar-day"></i></div>
+                </div>
+                <div class="value value-today">0</div>
+                <div class="card-footer">Total de servicios realizados hoy</div>
+            </div>
         </div>
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">Urgencias</div>
-                <div class="icon icon-urgencias"><i class="fas fa-ambulance"></i></div>
-            </div>
-            <div class="value value-urgencias">0</div>
-            <div class="card-footer">Servicios de urgencias hoy</div>
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">Medicina General</div>
-                <div class="icon icon-general"><i class="fas fa-user-md"></i></div>
-            </div>
-            <div class="value value-general">0</div>
-            <div class="card-footer">Servicios de medicina general</div>
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">Servicios Hoy</div>
-                <div class="icon icon-today"><i class="fas fa-calendar-day"></i></div>
-            </div>
-            <div class="value value-today">0</div>
-            <div class="card-footer">Total de servicios realizados hoy</div>
+
+        <div class="upload-section">
+            <h2 class="section-title"><i class="fas fa-file-upload"></i> Cargar Archivos para Reporte</h2>
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label for="crystalFile">Archivo Crystal (.xlsx, .xls):</label>
+                    <input type="file" class="file-input" id="crystalFile" name="crystal_file" accept=".csv,.xlsx,.xls" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="queryFile">Archivo Query (.xlsx, .xls):</label>
+                    <input type="file" class="file-input" id="queryFile" name="query_file" accept=".csv,.xlsx,.xls" required>
+                </div>
+
+                <button type="submit" class="btn">Generar Reporte</button>
+            </form>
+            <div id="result" class="result"></div>
         </div>
     </div>
 
-    <div class="upload-section">
-        <h2 class="section-title"><i class="fas fa-file-upload"></i> Cargar Archivos para Reporte</h2>
-        <form id="uploadForm">
-            <div class="form-group">
-                <label for="crystalFile">Archivo Crystal (fecha, servicio, nombreIPS, profesional):</label>
-                <input type="file" class="file-input" id="crystalFile" name="crystal_file" accept=".csv,.xlsx,.xls" required>
-            </div>
-            <div class="form-group">
-                <label for="queryFile">Archivo Query (fecha recepción, nombre servicio, nombre sede, origen):</label>
-                <input type="file" class="file-input" id="queryFile" name="query_file" accept=".csv,.xlsx,.xls" required>
-            </div>
-            <button type="submit" class="btn">Generar Reporte</button>
-        </form>
-
-        <div class="filter-section" style="margin-top:20px;">
-            <label for="filter-prof">Filtrar por Profesional:</label>
-            <select id="filter-prof"><option value="">--Seleccionar--</option></select>
-            <label for="filter-user">Filtrar por Usuario:</label>
-            <select id="filter-user"><option value="">--Seleccionar--</option></select>
-            <button id="filter-button" class="btn">Aplicar Filtro</button>
-        </div>
-
-        <div id="result" class="result"></div>
-    </div>
-
-    <footer>
-        <p>© 2025 Control de Servicios Médicos</p>
-    </footer>
-</div>
-
-<script src="/static/js/app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="/static/js/app.js"></script>
 </body>
 </html>
