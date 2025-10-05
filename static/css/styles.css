@@ -167,3 +167,37 @@ label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--dark)
     .value { font-size: 32px; }
     .subtitle { margin-left: 0; text-align: center; }
 }
+/* Tabla de resultados moderna y responsive */
+.result table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    overflow-x: auto;
+}
+
+.result table th,
+.result table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.result table th {
+    background-color: var(--primary);
+    color: white;
+    font-weight: 600;
+}
+
+.result table tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.result table tr:hover {
+    background-color: #e2f0ff;
+    transition: background-color 0.3s;
+}
+
+/* Scroll horizontal para móviles */
+.result {
+    overflow-x: auto;
+}
