@@ -12,23 +12,25 @@ CORS(app)
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Rutas para las carpetas
-UPLOAD_FOLDER = 'Uploads'
-QUERY_FILTERED_FOLDER = os.path.join(UPLOAD_FOLDER, 'query_filtered')
+# === 🔧 Configuración de carpetas seguras para Render ===
+BASE_DIR = '/tmp'  # Render solo permite escribir aquí
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+QUERY_FILTERED_FOLDER = os.path.join(BASE_DIR, 'query_filtered')
 STATIC_FOLDER = 'static'
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(QUERY_FILTERED_FOLDER, exist_ok=True)
-os.makedirs(STATIC_FOLDER, exist_ok=True)
+
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
 
-# Configuración de columnas
+# === Configuración de columnas ===
 columna_profesional = "Profesional"
 columna_usuario_validacion = "Nombre Usuario Validación"
 columna_servicio = "Servicio"
 columna_nombre_servicio = "Nombre Servicio"
 
-# Definir categorías de servicios
+# === Definir categorías de servicios ===
 CATEGORIAS_SERVICIOS = {
     'ecografia': ['ecografia', 'perfil biofisico'],
     'mamografia': ['mamografia'],
@@ -61,167 +63,132 @@ def contar_servicios_por_categoria(df, columna_servicio):
 def contar_servicios_detallados(df, columna_servicio):
     return df[columna_servicio].value_counts().to_dict()
 
+# === Procesar archivos Excel ===
 def process_excel(file1_path, file2_path):
     logger.debug(f"Procesando archivo1: {file1_path} y archivo2: {file2_path}")
     try:
         df1 = pd.read_excel(file1_path, engine='openpyxl')
         df1.columns = [c.strip() for c in df1.columns]
-        
+
         required_cols1 = [columna_profesional, columna_servicio]
         missing_cols1 = [col for col in required_cols1 if col not in df1.columns]
         if missing_cols1:
-            logger.error(f"Columnas faltantes en archivo1: {missing_cols1}")
-            return {"error": f"Columnas faltantes en archivo1: {', '.join(missing_cols1)}. Disponibles: {', '.join(df1.columns.tolist())}"}
-        
+            return {"error": f"Columnas faltantes en archivo1: {', '.join(missing_cols1)}"}
+
         df2 = pd.read_excel(file2_path, engine='openpyxl')
         df2.columns = [c.strip() for c in df2.columns]
-        
+
         required_cols2 = [columna_usuario_validacion, columna_nombre_servicio]
         missing_cols2 = [col for col in required_cols2 if col not in df2.columns]
         if missing_cols2:
-            logger.error(f"Columnas faltantes en archivo2: {missing_cols2}")
-            return {"error": f"Columnas faltantes en archivo2: {', '.join(missing_cols2)}. Disponibles: {', '.join(df2.columns.tolist())}"}
-        
+            return {"error": f"Columnas faltantes en archivo2: {', '.join(missing_cols2)}"}
+
         df1[columna_profesional] = df1[columna_profesional].astype(str).str.strip().str.lower()
         df1[columna_servicio] = df1[columna_servicio].astype(str).str.strip().str.lower()
         df2[columna_usuario_validacion] = df2[columna_usuario_validacion].astype(str).str.strip().str.lower()
         df2[columna_nombre_servicio] = df2[columna_nombre_servicio].astype(str).str.strip().str.lower()
-        
+
         professionals = df1[columna_profesional].unique()
+        users = df2[columna_usuario_validacion].unique()
+
         professional_data = {}
-        
+        user_data = {}
+
+        # Guardar archivos individuales de profesionales
         for professional in professionals:
             if pd.notna(professional) and professional != 'nan':
                 df_prof = df1[df1[columna_profesional] == professional]
                 safe_prof = sanitize_filename(professional)
-                output_file = os.path.join(app.config['UPLOAD_FOLDER'], f"{safe_prof}.xlsx")
+                output_file = os.path.join(UPLOAD_FOLDER, f"{safe_prof}.xlsx")
                 df_prof.to_excel(output_file, index=False, engine='openpyxl')
-                logger.debug(f"Archivo profesional guardado: {output_file}")
-                
-                servicios_por_categoria = contar_servicios_por_categoria(df_prof, columna_servicio)
-                servicios_detallados = contar_servicios_detallados(df_prof, columna_servicio)
-                
                 professional_data[professional] = {
                     "count": len(df_prof),
-                    "data": df_prof.to_dict('records'),
-                    "servicios_por_categoria": servicios_por_categoria,
-                    "servicios_detallados": servicios_detallados
+                    "servicios_por_categoria": contar_servicios_por_categoria(df_prof, columna_servicio),
+                    "servicios_detallados": contar_servicios_detallados(df_prof, columna_servicio),
+                    "download_url": f"/download/{safe_prof}.xlsx"
                 }
-        
-        users = df2[columna_usuario_validacion].unique()
-        user_data = {}
-        
+
+        # Guardar archivos individuales de usuarios
         for user in users:
             if pd.notna(user) and user != 'nan':
                 df_user = df2[df2[columna_usuario_validacion] == user]
                 safe_user = sanitize_filename(user)
                 output_file = os.path.join(QUERY_FILTERED_FOLDER, f"{safe_user}.xlsx")
                 df_user.to_excel(output_file, index=False, engine='openpyxl')
-                logger.debug(f"Archivo usuario guardado: {output_file}")
-                
-                servicios_por_categoria = contar_servicios_por_categoria(df_user, columna_nombre_servicio)
-                servicios_detallados = contar_servicios_detallados(df_user, columna_nombre_servicio)
-                
                 user_data[user] = {
                     "count": len(df_user),
-                    "data": df_user.to_dict('records'),
-                    "servicios_por_categoria": servicios_por_categoria,
-                    "servicios_detallados": servicios_detallados
+                    "servicios_por_categoria": contar_servicios_por_categoria(df_user, columna_nombre_servicio),
+                    "servicios_detallados": contar_servicios_detallados(df_user, columna_nombre_servicio),
+                    "download_url": f"/download/query/{safe_user}.xlsx"
                 }
-        
-        total_servicios_crystal = contar_servicios_por_categoria(df1, columna_servicio)
-        total_servicios_query = contar_servicios_por_categoria(df2, columna_nombre_servicio)
-        detallados_crystal = contar_servicios_detallados(df1, columna_servicio)
-        detallados_query = contar_servicios_detallados(df2, columna_nombre_servicio)
-        
-        total_services_crystal = len(df1)
-        num_professionals = len([p for p in professionals if pd.notna(p) and p != 'nan'])
-        total_services_query = len(df2)
-        num_users = len([u for u in users if pd.notna(u) and u != 'nan'])
-        
-        logger.debug(f"Total servicios crystal: {total_services_crystal}, Profesionales: {num_professionals}")
-        logger.debug(f"Total servicios query: {total_services_query}, Usuarios: {num_users}")
-        
+
         return {
             "success": True,
             "totals": {
-                "total_services_crystal": total_services_crystal,
-                "num_professionals": num_professionals,
-                "total_services_query": total_services_query,
-                "num_users": num_users,
-                "servicios_por_categoria_crystal": total_servicios_crystal,
-                "servicios_por_categoria_query": total_servicios_query,
-                "servicios_detallados_crystal": detallados_crystal,
-                "servicios_detallados_query": detallados_query
+                "total_services_crystal": len(df1),
+                "num_professionals": len(professionals),
+                "total_services_query": len(df2),
+                "num_users": len(users),
+                "servicios_por_categoria_crystal": contar_servicios_por_categoria(df1, columna_servicio),
+                "servicios_por_categoria_query": contar_servicios_por_categoria(df2, columna_nombre_servicio),
+                "servicios_detallados_crystal": contar_servicios_detallados(df1, columna_servicio),
+                "servicios_detallados_query": contar_servicios_detallados(df2, columna_nombre_servicio)
             },
-            "professionals": [p for p in professionals if pd.notna(p) and p != 'nan'],
-            "users": [u for u in users if pd.notna(u) and u != 'nan'],
+            "professionals": list(professionals),
+            "users": list(users),
             "professional_data": professional_data,
-            "user_data": user_data,
-            "all_columns": list(df1.columns),
-            "all_columns_query": list(df2.columns),
-            "categorias_servicios": list(CATEGORIAS_SERVICIOS.keys()) + ['otros']
+            "user_data": user_data
         }
-    except pd.errors.ParserError as e:
-        logger.error(f"ParserError: {str(e)}")
-        return {"error": "El archivo está corrupto o no es un archivo Excel válido."}
-    except PermissionError as e:
-        logger.error(f"PermissionError: {str(e)}")
-        return {"error": "No se tienen permisos para leer/escribir el archivo."}
+
     except Exception as e:
-        logger.error(f"Excepción general: {str(e)}", exc_info=True)
-        return {"error": f"Error procesando los archivos: {str(e)}"}
+        logger.error(f"Error procesando archivos: {e}", exc_info=True)
+        return {"error": str(e)}
 
 @app.route('/')
 def index():
-    logger.debug("Sirviendo index.html")
     return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    logger.debug("Recibida solicitud POST en /upload")
-    logger.debug(f"Archivos en request.files: {request.files}")
     if 'file1' not in request.files or 'file2' not in request.files:
-        logger.error("Faltan archivos en la solicitud")
         return jsonify({"error": "Por favor, selecciona ambos archivos."}), 400
-    
     file1 = request.files['file1']
     file2 = request.files['file2']
-    logger.debug(f"Archivo1: {file1.filename}, Archivo2: {file2.filename}")
-    if file1.filename == '' or file2.filename == '':
-        logger.error("Nombre de archivo vacío")
+    if not file1.filename or not file2.filename:
         return jsonify({"error": "Por favor, selecciona ambos archivos."}), 400
-    
-    if file1.filename.endswith(('.xlsx', '.xls')) and file2.filename.endswith(('.xlsx', '.xls')):
-        file1_path = os.path.join(app.config['UPLOAD_FOLDER'], file1.filename)
-        file2_path = os.path.join(app.config['UPLOAD_FOLDER'], file2.filename)
-        logger.debug(f"Guardando archivo1 en: {file1_path} y archivo2 en: {file2_path}")
-        file1.save(file1_path)
-        file2.save(file2_path)
-        result = process_excel(file1_path, file2_path)
-        logger.debug(f"Resultado de procesamiento: {result}")
-        if "error" in result:
-            return jsonify(result), 400
-        return jsonify(result), 200
-    logger.error(f"Formato no válido para los archivos: {file1.filename}, {file2.filename}")
-    return jsonify({"error": "Formato de archivo no válido. Sube archivos .xlsx o .xls."}), 400
 
+    file1_path = os.path.join(UPLOAD_FOLDER, file1.filename)
+    file2_path = os.path.join(UPLOAD_FOLDER, file2.filename)
+    file1.save(file1_path)
+    file2.save(file2_path)
+
+    result = process_excel(file1_path, file2_path)
+    if "error" in result:
+        return jsonify(result), 400
+    return jsonify(result), 200
+
+# === 🧾 Rutas de descarga ===
+@app.route('/download/<path:filename>')
+def download_file(filename):
+    if os.path.exists(os.path.join(UPLOAD_FOLDER, filename)):
+        return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
+    return jsonify({"error": "Archivo no encontrado"}), 404
+
+@app.route('/download/query/<path:filename>')
+def download_query_file(filename):
+    if os.path.exists(os.path.join(QUERY_FILTERED_FOLDER, filename)):
+        return send_from_directory(QUERY_FILTERED_FOLDER, filename, as_attachment=True)
+    return jsonify({"error": "Archivo no encontrado"}), 404
+
+# === PWA Files ===
 @app.route('/manifest.json')
 def manifest():
     manifest_data = {
         "short_name": "Servicios Medicos",
         "name": "Control de Servicios Médicos",
         "icons": [
-            {
-                "src": "/static/icon-192.png",
-                "type": "image/png",
-                "sizes": "192x192"
-            },
-            {
-                "src": "/static/icon-512.png",
-                "type": "image/png",
-                "sizes": "512x512"
-            }
+            {"src": "/static/icon-192.png", "type": "image/png", "sizes": "192x192"},
+            {"src": "/static/icon-512.png", "type": "image/png", "sizes": "512x512"}
         ],
         "start_url": "/",
         "background_color": "#ffffff",
@@ -237,38 +204,16 @@ def service_worker():
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open('v1').then(cache => {
-            return cache.addAll([
-                '/',
-                '/static/style.css',
-                '/static/js/app.js',
-                '/static/icon-192.png',
-                '/static/icon-512.png'
-            ]).catch(error => {
-                console.error('Cache addAll failed:', error);
-            });
+            return cache.addAll(['/','/static/style.css','/static/js/app.js','/static/icon-192.png','/static/icon-512.png']);
         })
     );
 });
 
 self.addEventListener('fetch', event => {
-    event.respondWith(
-        caches.match(event.request).then(response => {
-            return response || fetch(event.request);
-        }).catch(error => {
-            console.error('Fetch failed:', error);
-        })
-    );
+    event.respondWith(caches.match(event.request).then(response => response || fetch(event.request)));
 });
     """
     return sw_code, 200, {'Content-Type': 'application/javascript'}
-
-@app.route('/favicon.ico')
-def favicon():
-    return send_from_directory('static', 'favicon.ico')
-
-@app.route('/static/<path:filename>')
-def serve_static(filename):
-    return send_from_directory('static', filename)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=10000)
