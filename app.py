@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, render_template
 import pandas as pd
 import numpy as np
 import os
@@ -6,11 +6,11 @@ import gc
 import psutil
 from openpyxl import Workbook
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', template_folder='templates')
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # Hasta 20MB
 
 # ========================================================
-# FUNCIÓN OPTIMIZADA DE LECTURA DE EXCEL
+# LECTURA OPTIMIZADA DE ARCHIVOS EXCEL
 # ========================================================
 
 def read_large_excel(path):
@@ -20,46 +20,40 @@ def read_large_excel(path):
     """
     print(f"📘 Leyendo archivo: {os.path.basename(path)} ...")
 
-    # Leer Excel completo (sin chunksize)
     df = pd.read_excel(path, engine='openpyxl')
 
-    # Convertir tipos de datos para reducir RAM
+    # Reducir tipos numéricos
     for col in df.select_dtypes(include=['float64']).columns:
         df[col] = pd.to_numeric(df[col], downcast='float')
-
     for col in df.select_dtypes(include=['int64']).columns:
         df[col] = pd.to_numeric(df[col], downcast='integer')
 
     df.columns = df.columns.str.strip().str.lower()
-
     gc.collect()
     print(f"✅ Archivo {os.path.basename(path)} leído: {len(df)} filas, {len(df.columns)} columnas.")
     return df
 
+
 # ========================================================
-# PROCESAMIENTO DE LOS ARCHIVOS
+# PROCESAMIENTO PRINCIPAL
 # ========================================================
 
 def process_excel(file1_path, file2_path):
-    """
-    Procesa dos archivos Excel, genera totales globales y archivos individuales.
-    """
     output_dir = "/tmp"
     os.makedirs(output_dir, exist_ok=True)
     print("🧩 Iniciando procesamiento...")
 
-    # Leer archivos
     df1 = read_large_excel(file1_path)
     df2 = read_large_excel(file2_path)
 
-    # Detectar columnas relevantes
+    # Detección de columnas
     col_prof = next((c for c in df1.columns if 'profesional' in c), None)
     col_user = next((c for c in df2.columns if 'profesional' in c), None)
     col_serv1 = next((c for c in df1.columns if 'servicio' in c), None)
     col_serv2 = next((c for c in df2.columns if 'servicio' in c), None)
 
     if not all([col_prof, col_user, col_serv1, col_serv2]):
-        return {"error": "❌ No se encontraron columnas esperadas."}
+        return {"error": "❌ No se encontraron las columnas esperadas en los archivos."}
 
     df1.fillna("", inplace=True)
     df2.fillna("", inplace=True)
@@ -72,13 +66,11 @@ def process_excel(file1_path, file2_path):
 
     servicios_por_categoria_crystal = df1[col_serv1].value_counts().to_dict()
     servicios_por_categoria_query = df2[col_serv2].value_counts().to_dict()
-    servicios_detallados_crystal = df1.groupby(col_serv1).size().to_dict()
-    servicios_detallados_query = df2.groupby(col_serv2).size().to_dict()
 
     professional_data = {}
     user_data = {}
 
-    # ================= PROFESIONALES =================
+    # Procesar profesionales
     for prof in professionals:
         df_prof = df1[df1[col_prof] == prof]
         if not df_prof.empty:
@@ -96,7 +88,7 @@ def process_excel(file1_path, file2_path):
             del df_prof
             gc.collect()
 
-    # ================= USUARIOS =================
+    # Procesar usuarios
     for usr in users:
         df_user = df2[df2[col_user] == usr]
         if not df_user.empty:
@@ -120,24 +112,21 @@ def process_excel(file1_path, file2_path):
     mem = psutil.virtual_memory()
     print(f"✅ Procesamiento completo. Uso de memoria: {mem.percent}%")
 
-    totals = {
-        "total_services_crystal": total_services_crystal,
-        "total_services_query": total_services_query,
-        "num_professionals": len(professionals),
-        "num_users": len(users),
-        "servicios_por_categoria_crystal": servicios_por_categoria_crystal,
-        "servicios_por_categoria_query": servicios_por_categoria_query,
-        "servicios_detallados_crystal": servicios_detallados_crystal,
-        "servicios_detallados_query": servicios_detallados_query,
-    }
-
     return {
-        "totals": totals,
+        "totals": {
+            "total_services_crystal": total_services_crystal,
+            "total_services_query": total_services_query,
+            "num_professionals": len(professionals),
+            "num_users": len(users),
+            "servicios_por_categoria_crystal": servicios_por_categoria_crystal,
+            "servicios_por_categoria_query": servicios_por_categoria_query,
+        },
         "professionals": professionals,
         "users": users,
         "professional_data": professional_data,
-        "user_data": user_data,
+        "user_data": user_data
     }
+
 
 # ========================================================
 # ENDPOINTS FLASK
@@ -152,7 +141,6 @@ def upload():
         if not file1 or not file2:
             return jsonify({"error": "Debes subir ambos archivos."}), 400
 
-        # Detección de tamaño (para advertir al frontend)
         size_limit_mb = 15
         file1_size = len(file1.read()) / (1024 * 1024)
         file2_size = len(file2.read()) / (1024 * 1024)
@@ -197,7 +185,24 @@ def download_file(filename):
 
 @app.route('/')
 def home():
-    return send_file('index.html')
+    return render_template('index.html')
+
+
+# ========================================================
+# MANEJADOR GLOBAL DE ERRORES
+# ========================================================
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    import traceback
+    error_trace = traceback.format_exc()
+    print("❌ Error global detectado:")
+    print(error_trace)
+    return jsonify({
+        "error": str(e),
+        "type": e.__class__.__name__,
+        "details": error_trace.splitlines()[-5:]
+    }), 500
 
 
 if __name__ == '__main__':
