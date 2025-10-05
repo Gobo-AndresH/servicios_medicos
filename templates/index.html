@@ -1,14 +1,17 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Procesador de Estudios - Virrey Solís</title>
-  <link rel="stylesheet" href="style.css" />
+
+  <!-- ✅ Ruta Flask correcta al CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
   <script src="https://kit.fontawesome.com/a2d04e7b2d.js" crossorigin="anonymous"></script>
 </head>
-<body>
 
+<body>
   <!-- =================== ENCABEZADO =================== -->
   <header>
     <div class="logo">🏥 Virrey Solís</div>
@@ -16,7 +19,6 @@
   </header>
 
   <div class="container">
-
     <!-- =================== SUBIDA DE ARCHIVOS =================== -->
     <section class="upload-section">
       <h2>📂 Subir archivos Excel</h2>
@@ -33,7 +35,6 @@
       </div>
 
       <button id="process-button">⚙️ Procesar archivos</button>
-
       <div id="loading" style="display:none; margin-top:10px;"></div>
 
       <!-- Barra de progreso -->
@@ -79,13 +80,13 @@
 
       <div id="person-data" style="display:none;"></div>
     </section>
-
   </div>
 
   <footer>
     © 2025 Virrey Solís IPS — Sistema de mejora y productividad
   </footer>
 
-  <script src="app.js"></script>
+  <!-- ✅ Ruta Flask correcta al JS -->
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
