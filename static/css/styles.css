@@ -1,164 +1,159 @@
+/* ======== ESTILO GENERAL ======== */
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #e6f0fa;
+    background-color: #f4f8fc;
     color: #333;
 }
 
 .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
+    max-width: 1000px;
+    margin: 30px auto;
+    background-color: #fff;
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
 }
 
 header {
     text-align: center;
-    padding: 10px 0;
-    background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background-color: #007bff;
+    color: white;
+    padding: 20px;
 }
 
 .logo {
     font-size: 24px;
     font-weight: bold;
-    color: #007bff;
 }
 
 .subtitle {
     font-size: 14px;
-    color: #666;
+    opacity: 0.9;
 }
 
-.card {
-    background: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    text-align: center;
-    width: 20%;
-    transition: transform 0.2s;
-    margin: 10px;
-    display: inline-block;
-}
-
-.card:hover {
-    transform: scale(1.05);
-}
-
-.card h3 {
-    margin: 0;
-    font-size: 18px;
-    color: #666;
-}
-
-.card .count {
-    font-size: 36px;
-    font-weight: bold;
-    color: #007bff;
-    margin: 10px 0;
-}
-
+/* ======== SECCIÓN DE CARGA ======== */
 .upload-section {
-    margin: 20px 0;
     text-align: center;
+    padding: 30px 20px;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.upload-section label {
+    display: block;
+    margin: 15px 0 5px;
+    font-weight: bold;
+    color: #555;
 }
 
 .upload-section input[type="file"] {
-    margin: 10px;
+    margin-bottom: 15px;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
 }
 
-.upload-section button {
+.button-group {
+    margin-top: 20px;
+}
+
+/* ======== BOTONES ======== */
+button {
     padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+    border: none;
+}
+
+.btn-primary {
     background-color: #007bff;
     color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
 }
 
-.upload-section button:hover {
+.btn-primary:hover {
     background-color: #0056b3;
 }
 
-.filter-section {
-    margin: 20px 0;
+.btn-danger {
+    background-color: #dc3545;
+    color: #fff;
+    margin-left: 10px;
+}
+
+.btn-danger:hover {
+    background-color: #a71d2a;
+}
+
+/* ======== LOADING ======== */
+.loading {
     text-align: center;
+    font-size: 18px;
+    padding: 15px;
+    color: #007bff;
+    background-color: #eef5ff;
+    border-radius: 10px;
+    margin: 15px auto;
+    width: 80%;
 }
 
-.filter-section select {
-    padding: 8px;
-    font-size: 16px;
-    border-radius: 5px;
-    border: 1px solid #ddd;
-    width: 200px;
-    margin: 0 10px;
+/* ======== RESULTADOS ======== */
+.result-section {
+    padding: 20px;
 }
 
-.filter-section button {
-    padding: 8px 16px;
+.result-section h3 {
+    text-align: center;
+    color: #007bff;
+}
+
+.result-section a {
+    display: inline-block;
     background-color: #28a745;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+    color: white;
+    text-decoration: none;
+    padding: 10px 15px;
+    border-radius: 6px;
+    margin: 5px;
+    font-size: 15px;
+    transition: background-color 0.3s;
 }
 
-.filter-section button:hover {
-    background-color: #218838;
+.result-section a:hover {
+    background-color: #1e7e34;
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-
-th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
+.result-section p {
     text-align: center;
+    font-size: 15px;
 }
 
-th {
-    background-color: #007bff;
-    color: #fff;
-}
-
-#loading {
-    text-align: center;
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-radius: 5px;
-    margin: 10px 0;
-}
-
+/* ======== FOOTER ======== */
 footer {
     text-align: center;
-    padding: 10px 0;
-    margin-top: 20px;
-    color: #666;
+    background-color: #f8f9fa;
+    padding: 15px;
+    font-size: 13px;
+    color: #777;
 }
 
-.servicios-categoria, .detallados-servicios {
-    margin-top: 20px;
-}
+/* ======== RESPONSIVE ======== */
+@media (max-width: 768px) {
+    .container {
+        margin: 10px;
+    }
 
-#back-button {
-    padding: 10px 20px;
-    background-color: #6c757d;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    margin: 10px 0;
-}
+    button {
+        display: block;
+        width: 90%;
+        margin: 10px auto;
+    }
 
-#back-button:hover {
-    background-color: #5a6268;
-}
-
-.totals-group, .counts-group {
-    text-align: center;
+    .result-section a {
+        display: block;
+        width: 90%;
+        margin: 10px auto;
+    }
 }
