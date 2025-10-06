@@ -5,9 +5,13 @@ import os
 import gc
 import psutil
 from openpyxl import Workbook
+import shutil # ✅ Importamos shutil para poder eliminar la carpeta temporal si es necesario
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # Hasta 20MB
+
+# ✅ Definimos una carpeta temporal dentro de nuestro proyecto
+TEMP_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'temp_files')
 
 # ========================================================
 # LECTURA OPTIMIZADA DE ARCHIVOS EXCEL
@@ -39,7 +43,8 @@ def read_large_excel(path):
 # ========================================================
 
 def process_excel(file1_path, file2_path):
-    output_dir = "/tmp"
+    # ✅ Usamos nuestra carpeta temporal definida
+    output_dir = TEMP_FOLDER
     os.makedirs(output_dir, exist_ok=True)
     print("🧩 Iniciando procesamiento...")
 
@@ -135,6 +140,9 @@ def process_excel(file1_path, file2_path):
 @app.route('/upload', methods=['POST'])
 def upload():
     try:
+        # ✅ Creamos la carpeta temporal si no existe
+        os.makedirs(TEMP_FOLDER, exist_ok=True)
+        
         file1 = request.files.get('file1')
         file2 = request.files.get('file2')
 
@@ -151,8 +159,9 @@ def upload():
         if file1_size > size_limit_mb or file2_size > size_limit_mb:
             warning = f"⚠️ Archivos grandes detectados ({round(max(file1_size, file2_size),2)} MB). Esto puede tardar varios minutos."
 
-        file1_path = os.path.join("/tmp", file1.filename)
-        file2_path = os.path.join("/tmp", file2.filename)
+        # ✅ Guardamos los archivos en nuestra carpeta temporal
+        file1_path = os.path.join(TEMP_FOLDER, file1.filename)
+        file2_path = os.path.join(TEMP_FOLDER, file2.filename)
         file1.save(file1_path)
         file2.save(file2_path)
 
@@ -171,20 +180,22 @@ def upload():
 @app.route('/download/<filename>')
 def download_file(filename):
     try:
-        file_path = os.path.join("/tmp", filename)
+        # ✅ Buscamos el archivo en nuestra carpeta temporal
+        file_path = os.path.join(TEMP_FOLDER, filename)
         if not os.path.exists(file_path):
             return jsonify({"error": "Archivo no encontrado"}), 404
 
-        response = send_file(file_path, as_attachment=True)
-        os.remove(file_path)
-        print(f"🧹 Archivo eliminado tras descarga: {filename}")
-        return response
+        return send_file(file_path, as_attachment=True)
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 @app.route('/')
 def home():
+    # ✅ Opcional: Limpiar la carpeta temporal cada vez que se carga la página principal
+    if os.path.exists(TEMP_FOLDER):
+        shutil.rmtree(TEMP_FOLDER)
     return render_template('index.html')
 
 
